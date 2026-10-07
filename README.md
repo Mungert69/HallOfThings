@@ -1,58 +1,34 @@
-# Halls of the Things — original-maze v2
+# Halls of the Things — original-maze experiment v2
 
-A native C/SDL2 Linux reimplementation of *Halls of the Things*, the
-1983 ZX Spectrum dungeon adventure by Design Design
-(Simon Brattel, Martin Horsley and Neil Mottershead).
+This is an alternate comparison build. It keeps the current smooth high-resolution game but replaces the native DFS maze generator with a C translation of the published 16x16 Halls maze topology algorithm.
 
-## Why I ported it
 
-*Halls of the Things* was my favourite game on the ZX Spectrum. I
-wanted to play it on Linux, and I was curious how its maze generator
-actually worked, so I wrote this clean-room port in C. It is a love
-letter to the original — every line of code and every bitmap here is
-newly written, using the published Spectrum source only as behavioural
-and dimensional reference.
+Native C/SDL2 Linux reimplementation of *Halls of the Things*.
 
-## What this build is
+## Project layout
 
-This is the **original-maze v2** experiment: it keeps the smooth,
-high-resolution game but replaces the native DFS maze generator with a
-direct C translation of the published 16x16 Halls maze topology
-algorithm. Floors 1–7 are grown with the original `Main` / `Draw` /
-`FindMoves` / `Move` / `FindNext` / `FindLinks` / `Link` routines and
-the original `ConTab` connection probabilities, then expanded at the
-original 7-cell pitch into the 113x113 world. Floor 0 keeps the
-special open-plan treatment (and the native golden-key sanctuary) from
-the original source.
+```text
+.
+├── CMakeLists.txt
+├── include/
+│   └── hall_of_things/
+│       └── game.h
+├── src/
+│   ├── game.c
+│   ├── main.c
+│   └── sprites.h
+├── tests/
+│   └── test_game.c
+├── reference/
+│   └── original/
+│       ├── README.md
+│       └── fetch-original-sources.sh
+└── LICENSE-NOTICE.md
+```
 
-The goal is the original one: explore the maze floors, collect the
-seven magic rings, find the golden key and escape.
+Build artifacts belong only in `build/` and are not included in the source archive.
 
-## Features
-
-- **Faithful maze topology** — original 16x16 one-byte-per-room
-  generator expanded into the 113x113 world, with deterministic seeds
-  for repeatable floors
-- **Spectrum viewport** — the visible playfield is limited to the
-  original ZX Spectrum 32x24 character-cell field of view (256x192
-  pixels), drawn at high resolution in a 1280x720 window
-- **Smooth movement** — the player and projectiles interpolate between
-  logical cells while collision, pickups and combat stay grid-based
-  and deterministic
-- **The original arsenal** — animated sword sweep, arrows, a homing
-  fireball that steers toward the nearest Thing, and lightning that
-  reflects off walls, with original lifetimes, ranges and relative
-  speeds wherever practical
-- **Original character scale** — the player is an 8x16 bitmap (two
-  stacked Spectrum character cells) and Things are 8x8; the four
-  diagonal frames are new additions for the eight-way aiming
-- **Compact HUD** — rings, magic, arrows, health, floor and score in
-  a narrow icon strip outside the clipped playfield
-- **Overlays** — `1` status, `H` controls, `C` cheat locator
-  (uncollected ring counts per floor, the golden-key floor and the win
-  sequence)
-
-## Build (Debian 13)
+## Debian 13
 
 ```bash
 sudo apt install build-essential cmake pkg-config libsdl2-dev
@@ -60,87 +36,107 @@ sudo apt install build-essential cmake pkg-config libsdl2-dev
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j"$(nproc)"
 ctest --test-dir build --output-on-failure
-./build/halls-original-maze-v2
+./build/halls-original-maze-v3
 ```
 
-Run with a fixed seed, optionally picking a starting floor:
+For a repeatable maze:
 
 ```bash
-./build/halls-original-maze-v2 12345     # repeatable maze, default start floor 1
-./build/halls-original-maze-v2 12345 0   # special open-plan floor 0
-./build/halls-original-maze-v2 12345 7   # top generated maze floor
+./build/halls-original-maze-v3 12345
 ```
-
-Release builds default to size-oriented settings (`-Os`, section garbage
-collection, symbol stripping); disable with `-DHALLS_SMALL_BINARY=OFF`.
 
 ## Controls
 
-| Key | Action |
-| --- | --- |
-| Arrow keys | move and set the persistent aiming direction |
-| Two arrows together | diagonals, e.g. Up+Right |
-| `S` / Space | sword in the aiming direction |
-| `A` / Enter | arrow in the aiming direction |
-| `F` | homing fireball (2 magic; acquires the nearest Thing) |
-| `L` | lightning in the aiming direction; reflects from walls |
-| `K` | manual pickup (items also auto-pick up when you walk onto them) |
-| `D` | drop treasure |
-| `E` | heal (30 magic) |
-| `H` | show/hide the controls overlay |
-| `C` | show/hide the cheat overlay |
-| `1` | status |
-| `R` | test refill |
-| `Esc` | quit |
+- Arrow keys: move and set the persistent aiming direction
+- Hold two arrow keys together for diagonals, e.g. Up+Right
+- Releasing the keys stops movement but keeps the last aiming direction
+- `S` / Space: sword in the current aiming direction
+- `A` / Enter: arrow in the current aiming direction
+- `F`: homing fireball; it acquires the nearest Thing and steers as it moves
+- `L`: lightning in the current aiming direction; it reflects from walls
+- Items auto-pick up when you move onto them if you have capacity; `K` remains as an optional manual pickup key
+- `D`: drop treasure
+- `H`: show/hide the controls overlay
+- `C`: show/hide the cheat overlay (golden-key floor and win sequence)
+- `E`: heal
+- `R`: test refill
+- `1`: status
+- `Esc`: quit
 
-Releasing the keys stops movement but keeps the last aiming direction.
 
-## Project layout
 
-```text
-.
-├── CMakeLists.txt
-├── include/hall_of_things/game.h   # game state, tiles, constants
-├── src/game.c                      # grid logic: maze gen, movement, combat
-├── src/main.c                      # SDL2 renderer, input, camera, HUD
-├── src/sprites.h                   # clean-room bitmap artwork
-├── tests/test_game.c               # connectivity and state tests (CTest)
-└── reference/original/             # mapping to the published Spectrum source
-    ├── README.md
-    ├── USED_SOURCE.md
-    ├── ORIGINAL_MAZE_PORT.md
-    └── fetch-original-sources.sh   # downloads the rights-holder's archive files
+## Visual renderer
+
+The main renderer uses a 1280x720 logical canvas designed for a laptop display. The whole playfield is black open space with thin green wall centre-lines; doorways are plain gaps in those lines. The permanent HUD is a narrow icon strip for rings, magic, arrows, health, floor and score. Sprites are deliberately small relative to the rooms so the game keeps the open, ricochet-friendly feel. This experimental build uses the original 16x16 room topology on the original 7-cell pitch, expanded into the 113x113 world.
+
+Press `1` for status, `H` for the controls overlay, and `C` for the cheat/win overlay.
+
+## Small release binary
+
+Release builds default to size-oriented compiler/linker settings (`-Os`, section garbage collection and symbol stripping). This affects only the final `halls-original-maze-v3` executable; CMake metadata, tests and the static library in `build/` are development artifacts and are not part of the game executable. Disable this with `-DHALLS_SMALL_BINARY=OFF` if you want an unstripped release binary for debugging.
+
+## Smooth movement
+
+The SDL frontend now interpolates player motion over each logical grid step and follows the interpolated position with the camera. Collision, pickups and combat remain grid-based and deterministic. Projectiles are also interpolated between their previous and current logical cells, so arrows, fireballs and lightning travel smoothly without changing their gameplay timing.
+
+
+## Sprite alignment with the Spectrum source
+
+The renderer now follows the dimensions implied by the original character renderer: the player is an **8x16** bitmap (two stacked Spectrum character cells) and Things are **8x8**. The Linux port keeps eight-way facing, so the four diagonal player frames are new additions; all of the bitmaps in `src/sprites.h` are clean-room artwork rather than copied original character bytes.
+
+This keeps characters small relative to the high-resolution logical cells while retaining the smooth open-screen renderer.
+
+## Original source reference folder
+
+`reference/original/` documents every original source set currently used as a reference and includes `fetch-original-sources.sh`. Run that script to place the official Design Design source files directly in the project. They are not redistributed in this ZIP because the archive labels them as copyrighted and does not state an open redistribution licence.
+
+## Cheat ring locator
+
+Press `C` to show the cheat overlay. It now lists the number of uncollected rings remaining on every floor 1-7, the golden-key floor, and the win sequence.
+
+## Fidelity pass
+
+The current renderer keeps the smooth high-resolution native presentation but
+uses the original game's character scale as its visual reference: the player is
+8x16, Things and ordinary objects are 8x8, and the sword is shown as an animated
+sweep. Projectile lifetimes/search ranges and relative speeds are aligned with
+the published source where practical, while the native eight-way aiming and
+smooth interpolation remain deliberate extensions.
+
+See `reference/original/USED_SOURCE.md` for the source-to-port mapping.
+
+
+## Spectrum-style viewport
+
+The high-resolution SDL renderer deliberately limits the visible playfield to the original ZX Spectrum **32 x 24 character-cell field of view** (256 x 192 pixels on the original machine). The Linux window remains 1280x720 and each logical cell is rendered at higher resolution, so movement/camera interpolation remain smooth while the player sees the same amount of world geometry that fitted on a Spectrum screen. The compact HUD is outside the clipped playfield and does not consume a world row.
+
+
+## Experimental original maze generator
+
+Floors 1-7 use a direct C translation of the original `Main` / `Draw` / `FindMoves` / `Move` / `FindNext` / `FindLinks` / `Link` topology algorithm. The generator uses a 16x16 one-byte-per-room small maze and the original `ConTab` probability values, then expands that topology at a 7-cell pitch into the existing 113x113 world. Floor 0 remains the special open-plan level, matching the original source's separate treatment, with the native golden-key sanctuary retained for the current complete game loop.
+
+The random-number generator is intentionally still the native port RNG, so a given Linux seed is repeatable but does not produce the exact same byte sequence as a Spectrum run. See `reference/original/ORIGINAL_MAZE_PORT.md`.
+
+
+## Experimental start floor
+
+This comparison build defaults to **floor 1**, because floors 1–7 are the levels that use the original 16x16 room-maze renderer. The original source deliberately treats floor 0 as a special open-plan level, which made the first experimental build appear to have no maze at startup.
+
+Run with a fixed seed:
+
+```bash
+./build/halls-original-maze-v3 12345
 ```
 
-Build artifacts belong only in `build/` and are not part of the source
-tree.
+Optionally select a starting floor with a second argument:
 
-## Fidelity and deliberate extensions
+```bash
+./build/halls-original-maze-v3 12345 0   # special open-plan floor 0
+./build/halls-original-maze-v3 12345 1   # first generated maze floor
+./build/halls-original-maze-v3 12345 7   # top generated maze floor
+```
 
-The port aligns projectile lifetimes, search ranges, relative speeds,
-damage, magic/arrow/wound limits and starting values with the published
-source where practical. Deliberate native extensions: smooth sub-cell
-rendering and camera motion, arrow-key movement with simultaneous-key
-diagonals, persistent eight-way aim, the high-resolution open playfield
-and the compact graphical HUD.
 
-The Linux port's random-number generator is the native xorshift RNG, so
-a given seed is repeatable on Linux but does not reproduce the exact
-byte sequence of a Spectrum run. See
-`reference/original/ORIGINAL_MAZE_PORT.md` and
-`reference/original/USED_SOURCE.md` for the full source-to-port mapping.
+## v3 smooth Things
 
-## Original sources
-
-`reference/original/` documents every original source set used as a
-reference. Run `./reference/original/fetch-original-sources.sh` to
-download the official Design Design files (the consolidated `halls.asm`,
-the 1983 character set and front end) directly from the rights-holder's
-public archive. They are not vendored here because the archive does not
-state an open redistribution licence.
-
-## Licence
-
-See [LICENSE-NOTICE.md](LICENSE-NOTICE.md). This reimplementation is new
-C code and clean-room artwork; *Halls of the Things* and the original
-source/assets remain the property of their respective copyright holders.
+The player and projectiles were already visually interpolated between logical grid cells. v3 also interpolates Thing/monster movement between their logical cells, preserving the existing AI and collision timing while removing visible cell-by-cell jumps.

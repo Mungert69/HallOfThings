@@ -51,6 +51,17 @@ int main(void) {
     for (int t = TILE_RING_1; t <= TILE_RING_7; ++t) rings += game_debug_count_tile(&g, (Tile)t);
     assert(rings == 7);
     assert(game_debug_count_tile(&g, TILE_GOLD_KEY) == 1);
+
+    /* Every spawned Thing starts with a valid interpolation origin. */
+    for (int fl = 0; fl < HOTT_FLOORS; ++fl) {
+        for (int i = 0; i < HOTT_MAX_MONSTERS; ++i) {
+            const Monster *m = &g.floors[fl].monsters[i];
+            if (!m->active) continue;
+            assert(m->prev_x == m->x);
+            assert(m->prev_y == m->y);
+            assert(m->move_interval_ms > 0);
+        }
+    }
     assert(game_debug_count_tile(&g, TILE_STAIRS_UP) == 7);
     assert(game_debug_count_tile(&g, TILE_STAIRS_DOWN) == 7);
 

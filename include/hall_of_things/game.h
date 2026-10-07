@@ -52,10 +52,12 @@ typedef enum { PROJ_ARROW = 0, PROJ_FIREBALL = 1, PROJ_LIGHTNING = 2 } Projectil
 typedef struct {
     bool active;
     int x, y;
+    int prev_x, prev_y;
     int wounds;
     int max_wounds;
     int move_type;
     int move_cooldown_ms;
+    int move_interval_ms;
     int attack_cooldown_ms;
 } Monster;
 

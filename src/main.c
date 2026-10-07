@@ -499,9 +499,17 @@ static void render(SDL_Renderer*r,const Game*g,const PlayerMotion *motion){
     for(int i=0;i<HOTT_MAX_MONSTERS;++i){
         const Monster*m=&g->floors[g->floor].monsters[i];
         if(!m->active) continue;
-        float sx=(float)m->x-camx,sy=(float)m->y-camy;
+
+        int interval=m->move_interval_ms>0?m->move_interval_ms:1;
+        float alpha=1.0f-(float)m->move_cooldown_ms/(float)interval;
+        if(alpha<0.0f) alpha=0.0f;
+        if(alpha>1.0f) alpha=1.0f;
+        float rx=(float)m->prev_x+((float)m->x-(float)m->prev_x)*alpha;
+        float ry=(float)m->prev_y+((float)m->y-(float)m->prev_y)*alpha;
+
+        float sx=rx-camx,sy=ry-camy;
         if(sx<-1.0f || sy<-1.0f || sx>(float)VIEW_W+1.0f || sy>(float)VIEW_H+1.0f) continue;
-        draw_monster(r,m,screen_tile_x((float)m->x,camx),screen_tile_y((float)m->y,camy));
+        draw_monster(r,m,screen_tile_x(rx,camx),screen_tile_y(ry,camy));
     }
 
     for(int i=0;i<HOTT_MAX_PROJECTILES;++i){

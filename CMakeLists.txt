@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(halls_of_the_things_original_maze_v2 VERSION 0.5.1 LANGUAGES C)
+project(halls_of_the_things_original_maze_v3 VERSION 0.5.2 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -26,17 +26,17 @@ target_compile_options(halls_core PRIVATE
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
 
-add_executable(halls_original_maze_v2
+add_executable(halls_original_maze_v3
     src/main.c
 )
-set_target_properties(halls_original_maze_v2 PROPERTIES OUTPUT_NAME "halls-original-maze-v2")
+set_target_properties(halls_original_maze_v3 PROPERTIES OUTPUT_NAME "halls-original-maze-v3")
 
-target_link_libraries(halls_original_maze_v2 PRIVATE
+target_link_libraries(halls_original_maze_v3 PRIVATE
     halls_core
     PkgConfig::SDL2
 )
 
-target_compile_options(halls_original_maze_v2 PRIVATE
+target_compile_options(halls_original_maze_v3 PRIVATE
     -Wall
     -Wextra
     -Wpedantic
@@ -48,12 +48,12 @@ if(HALLS_SMALL_BINARY)
         $<$<CONFIG:Release>:-ffunction-sections>
         $<$<CONFIG:Release>:-fdata-sections>
     )
-    target_compile_options(halls_original_maze_v2 PRIVATE
+    target_compile_options(halls_original_maze_v3 PRIVATE
         $<$<CONFIG:Release>:-Os>
         $<$<CONFIG:Release>:-ffunction-sections>
         $<$<CONFIG:Release>:-fdata-sections>
     )
-    target_link_options(halls_original_maze_v2 PRIVATE
+    target_link_options(halls_original_maze_v3 PRIVATE
         $<$<CONFIG:Release>:-Wl,--gc-sections>
         $<$<CONFIG:Release>:-s>
     )

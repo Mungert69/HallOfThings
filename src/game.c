@@ -354,10 +354,12 @@ static void spawn_monsters(Game *g, int floor_no) {
         Monster *m = &f->monsters[i];
         m->active = true;
         m->x = x; m->y = y;
+        m->prev_x = x; m->prev_y = y;
         m->max_wounds = 30 + rr(g, 21); /* mirrors 30..49 variation */
         m->wounds = m->max_wounds;
         m->move_type = rr(g, 4);
         m->move_cooldown_ms = 80 + rr(g, 300);
+        m->move_interval_ms = m->move_cooldown_ms;
         m->attack_cooldown_ms = 0;
     }
 }
@@ -743,7 +745,13 @@ static void update_monsters(Game *g,int dt){
         Monster *m=&f->monsters[i];if(!m->active)continue;
         if(m->attack_cooldown_ms>0)m->attack_cooldown_ms-=dt;
         m->move_cooldown_ms-=dt;if(m->move_cooldown_ms>0)continue;
+
+        /* Start a new visual movement interval from the Thing's current cell.
+         * If it finds a valid step below, x/y become the destination while
+         * prev_x/prev_y remain the origin for renderer interpolation. */
+        m->prev_x=m->x; m->prev_y=m->y;
         m->move_cooldown_ms=120+rr(g,180);
+        m->move_interval_ms=m->move_cooldown_ms;
         int md=abs(m->x-g->player_x)+abs(m->y-g->player_y);
         if(md==1){if(m->attack_cooldown_ms<=0){hurt_player(g,6+rr(g,10));m->attack_cooldown_ms=500;}continue;}
         int choices[4],n=0;
